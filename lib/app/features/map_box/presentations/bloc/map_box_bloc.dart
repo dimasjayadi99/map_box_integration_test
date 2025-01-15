@@ -29,7 +29,7 @@ class MapBoxBloc extends Bloc<MapBoxEvent, MapBoxState> {
   }) : super(MapBoxInitState()) {
     on<OnTapMap>(_onTapMap);
     on<OnSuggestionSearch>(_searchSuggestions);
-    on<OnClearSuggestion>((event, emit) => emit(SearchSuccessState([])));
+    on<OnClearSuggestion>((event, emit) => emit(SearchSuccessState(const [])));
     on<OnTapSuggestion>(_tapSuggestion);
 
     initialCameraPosition = _getInitialCameraOptions();
@@ -62,7 +62,7 @@ class MapBoxBloc extends Bloc<MapBoxEvent, MapBoxState> {
       if (location.lat != 0 || location.lon != 0) {
         _moveCamera(location.lat, location.lon);
         await _addMarker(location.lat, location.lon);
-        emit(SearchSuccessState([])); // Clear suggestions
+        emit(SearchSuccessState(const [])); // Clear suggestions
       }
     } catch (e) {
       emit(SearchFailedState(e.toString()));
