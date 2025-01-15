@@ -22,19 +22,21 @@ class MapBoxBloc extends Bloc<MapBoxEvent, MapBoxState> {
   late CameraOptions initialCameraPosition;
   MapboxMap? mapboxMap;
 
-  MapBoxBloc(
-      {required this.fetchRoute,
-      required this.searchSuggestion,
-      required this.suggestionOnTap})
-      : super(MapBoxInitState()) {
-    on<OnTapMap>(onTapMap);
-    on<OnSuggestionSearch>(searchSuggestions);
-    on<OnClearSuggestion>((event, emit) {
-      emit(SearchSuccessState(const []));
-    });
-    on<OnTapSuggestion>(tapSuggestion);
+  MapBoxBloc({
+    required this.fetchRoute,
+    required this.searchSuggestion,
+    required this.suggestionOnTap,
+  }) : super(MapBoxInitState()) {
+    on<OnTapMap>(_onTapMap);
+    on<OnSuggestionSearch>(_searchSuggestions);
+    on<OnClearSuggestion>((event, emit) => emit(SearchSuccessState([])));
+    on<OnTapSuggestion>(_tapSuggestion);
 
-    initialCameraPosition = CameraOptions(
+    initialCameraPosition = _getInitialCameraOptions();
+  }
+
+  CameraOptions _getInitialCameraOptions() {
+    return CameraOptions(
       center: Point(
         coordinates: Position(106.8456, -6.2088),
       ),
@@ -42,65 +44,32 @@ class MapBoxBloc extends Bloc<MapBoxEvent, MapBoxState> {
     );
   }
 
-  Future<void> searchSuggestions(
+  Future<void> _searchSuggestions(
       OnSuggestionSearch event, Emitter<MapBoxState> emit) async {
     emit(SearchLoadingState());
     try {
-      final response = await searchSuggestion.searchSuggestion(event.query);
-      emit(SearchSuccessState(response));
+      final suggestions = await searchSuggestion.searchSuggestion(event.query);
+      emit(SearchSuccessState(suggestions));
     } catch (e) {
       emit(SearchFailedState(e.toString()));
     }
   }
 
-  Future<void> tapSuggestion(
+  Future<void> _tapSuggestion(
       OnTapSuggestion event, Emitter<MapBoxState> emit) async {
     try {
-      final response = await suggestionOnTap.suggestionOnTap(event.mapBoxId);
-
-      if (response.lat != 0 || response.lon != 0) {
-        final newCameraPosition = CameraOptions(
-          center: Point(
-            coordinates: Position(response.lon, response.lat),
-          ),
-          zoom: 15.0,
-        );
-
-        mapboxMap?.flyTo(
-          newCameraPosition,
-          MapAnimationOptions(duration: 1500, startDelay: 0),
-        );
-
-        emit(SearchSuccessState(const []));
+      final location = await suggestionOnTap.suggestionOnTap(event.mapBoxId);
+      if (location.lat != 0 || location.lon != 0) {
+        _moveCamera(location.lat, location.lon);
+        await _addMarker(location.lat, location.lon);
+        emit(SearchSuccessState([])); // Clear suggestions
       }
     } catch (e) {
       emit(SearchFailedState(e.toString()));
     }
   }
 
-  Future<void> fetchGenerateRoute() async {
-    try {
-      final response = await fetchRoute.fetchRoute(corList);
-      drawRoute(response);
-    } catch (e) {
-      rethrow;
-    }
-  }
-
-  void onMapCreated(MapboxMap mapboxMap) async {
-    this.mapboxMap = mapboxMap;
-    mapboxMap.loadStyleURI(MapboxStyles.MAPBOX_STREETS);
-    mapboxMap.setCamera(initialCameraPosition);
-    mapboxMap.scaleBar.updateSettings(ScaleBarSettings(
-      enabled: false,
-    ));
-    pointAnnotationManager =
-        await mapboxMap.annotations.createPointAnnotationManager();
-    lineAnnotationManager =
-        await mapboxMap.annotations.createPolylineAnnotationManager();
-  }
-
-  void onTapMap(OnTapMap event, Emitter<MapBoxState> emit) async {
+  Future<void> _onTapMap(OnTapMap event, Emitter<MapBoxState> emit) async {
     try {
       final position = Position(
         event.context.point.coordinates.lng,
@@ -108,68 +77,82 @@ class MapBoxBloc extends Bloc<MapBoxEvent, MapBoxState> {
       );
       corList.add(position);
 
-      final ByteData bytes = await rootBundle.load(AppPath.markerPath);
-      final Uint8List list = bytes.buffer.asUint8List();
-
       if (corList.length <= 5) {
-        pointAnnotationManager.create(
-          PointAnnotationOptions(
-            geometry: Point(coordinates: position),
-            image: list,
-          ),
-        );
-        await fetchGenerateRoute();
+        await _addMarker(position.lat.toDouble(), position.lng.toDouble());
+        await _fetchAndDrawRoute();
       }
     } catch (e) {
       rethrow;
     }
   }
 
-  void drawRoute(List<Position> routePoints) {
+  Future<void> _fetchAndDrawRoute() async {
+    try {
+      final routePoints = await fetchRoute.fetchRoute(corList);
+      _drawRoute(routePoints);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<void> _addMarker(double lat, double lon) async {
+    final ByteData bytes = await rootBundle.load(AppPath.markerPath);
+    final Uint8List list = bytes.buffer.asUint8List();
+
+    pointAnnotationManager.create(
+      PointAnnotationOptions(
+        geometry: Point(coordinates: Position(lon, lat)),
+        image: list,
+      ),
+    );
+  }
+
+  void _drawRoute(List<Position> routePoints) {
     lineAnnotationManager.deleteAll();
     lineAnnotationManager.create(
       PolylineAnnotationOptions(
-        geometry: LineString(
-          coordinates: routePoints,
-        ),
+        geometry: LineString(coordinates: routePoints),
         lineWidth: 4.0,
         lineColor: 0xff212121,
       ),
     );
   }
 
-  void zoomIn() {
-    if (mapboxMap != null) {
-      mapboxMap!.getCameraState().then((cameraState) {
-        double currentZoom = cameraState.zoom;
+  void _moveCamera(double lat, double lon) {
+    final newCameraOptions = CameraOptions(
+      center: Point(coordinates: Position(lon, lat)),
+      zoom: 15.0,
+    );
 
-        double newZoom = currentZoom + 1.0;
-
-        mapboxMap!.flyTo(
-          CameraOptions(
-            zoom: newZoom,
-          ),
-          MapAnimationOptions(duration: 300, startDelay: 0),
-        );
-      });
-    }
+    mapboxMap?.flyTo(
+      newCameraOptions,
+      MapAnimationOptions(duration: 1500),
+    );
   }
 
-  void zoomOut() {
-    if (mapboxMap != null) {
-      mapboxMap!.getCameraState().then((cameraState) {
-        double currentZoom = cameraState.zoom;
+  void onMapCreated(MapboxMap map) async {
+    mapboxMap = map;
+    map.loadStyleURI(MapboxStyles.MAPBOX_STREETS);
+    map.setCamera(initialCameraPosition);
+    map.scaleBar.updateSettings(ScaleBarSettings(enabled: false));
+    pointAnnotationManager =
+        await map.annotations.createPointAnnotationManager();
+    lineAnnotationManager =
+        await map.annotations.createPolylineAnnotationManager();
+  }
 
-        double newZoom = currentZoom - 1.0;
+  void zoomIn() => _adjustZoom(1.0);
 
-        mapboxMap!.flyTo(
-          CameraOptions(
-            zoom: newZoom,
-          ),
-          MapAnimationOptions(duration: 300, startDelay: 0),
-        );
-      });
-    }
+  void zoomOut() => _adjustZoom(-1.0);
+
+  void _adjustZoom(double delta) {
+    mapboxMap?.getCameraState().then((state) {
+      final newZoom = state.zoom + delta;
+      mapboxMap?.flyTo(
+        CameraOptions(zoom: newZoom),
+        MapAnimationOptions(duration: 300),
+      );
+    });
   }
 
   void resetRoute() {
