@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'dart:math'
+import 'dart:math';
 import 'package:map_box_app/app/config/map_config.dart';
 import 'package:http/http.dart' as http;
 import 'package:map_box_app/app/features/map_box/data/models/search_suggestions_model.dart';
