@@ -25,73 +25,84 @@ class MapBoxPage extends StatelessWidget {
       body: SafeArea(
         child: Stack(
           children: [
-            ClipRRect(
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(32),
-                topRight: Radius.circular(32),
-              ),
-              child: mapbox.MapWidget(
-                key: const ValueKey("mapWidget"),
-                onMapCreated: context.read<MapBoxBloc>().onMapCreated,
-                onTapListener: (mapboxContext) {
-                  context.read<MapBoxBloc>().add(OnTapMap(mapboxContext));
-                },
-              ),
-            ),
-            Positioned(
-              left: 16,
-              right: 16,
-              top: 16,
-              child: TextFormField(
-                decoration: InputDecoration(
-                    prefixIcon: Icon(
-                      Icons.search,
-                      color: AppStyle.secondaryColor,
-                    ),
-                    filled: true,
-                    fillColor: AppStyle.primaryColor,
-                    border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(32),
-                        borderSide: BorderSide(
-                          width: 1,
-                          color: AppStyle.secondaryColor,
-                        )),
-                    hintText: 'Telusuri Lokasi...',
-                    hintStyle: Theme.of(context)
-                        .textTheme
-                        .bodyMedium
-                        ?.copyWith(color: AppStyle.secondaryColor)),
-              ),
-            ),
-            Positioned(
-                right: 16,
-                bottom: 24,
-                child: Column(
-                  children: [
-                    CustomButton(
-                        onTap: context.read<MapBoxBloc>().resetRoute,
-                        icon: Icons.restart_alt),
-                    const SizedBox(
-                      height: 8,
-                    ),
-                    CustomButton(
-                        onTap: context.read<MapBoxBloc>().zoomIn,
-                        icon: Icons.zoom_in),
-                    const SizedBox(
-                      height: 8,
-                    ),
-                    CustomButton(
-                        onTap: context.read<MapBoxBloc>().zoomOut,
-                        icon: Icons.zoom_out),
-                    const SizedBox(
-                      height: 8,
-                    ),
-                    CustomButton(onTap: () {}, icon: Icons.location_searching),
-                  ],
-                )),
+            _buildMap(context),
+            _buildSearchBar(context),
+            _buildButtonTools(context),
           ],
         ),
       ),
     );
+  }
+
+  _buildMap(BuildContext context) {
+    return ClipRRect(
+      borderRadius: const BorderRadius.only(
+        topLeft: Radius.circular(32),
+        topRight: Radius.circular(32),
+      ),
+      child: mapbox.MapWidget(
+        key: const ValueKey("mapWidget"),
+        onMapCreated: context.read<MapBoxBloc>().onMapCreated,
+        onTapListener: (mapboxContext) {
+          context.read<MapBoxBloc>().add(OnTapMap(mapboxContext));
+        },
+      ),
+    );
+  }
+
+  _buildSearchBar(BuildContext context) {
+    return Positioned(
+      left: 16,
+      right: 16,
+      top: 16,
+      child: TextFormField(
+        decoration: InputDecoration(
+            prefixIcon: Icon(
+              Icons.search,
+              color: AppStyle.secondaryColor,
+            ),
+            filled: true,
+            fillColor: AppStyle.primaryColor,
+            border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(32),
+                borderSide: BorderSide(
+                  width: 1,
+                  color: AppStyle.secondaryColor,
+                )),
+            hintText: 'Telusuri Lokasi...',
+            hintStyle: Theme.of(context)
+                .textTheme
+                .bodyMedium
+                ?.copyWith(color: AppStyle.secondaryColor)),
+      ),
+    );
+  }
+
+  _buildButtonTools(BuildContext context) {
+    return Positioned(
+        right: 16,
+        bottom: 24,
+        child: Column(
+          children: [
+            CustomButton(
+                onTap: context.read<MapBoxBloc>().resetRoute,
+                icon: Icons.restart_alt),
+            const SizedBox(
+              height: 8,
+            ),
+            CustomButton(
+                onTap: context.read<MapBoxBloc>().zoomIn, icon: Icons.zoom_in),
+            const SizedBox(
+              height: 8,
+            ),
+            CustomButton(
+                onTap: context.read<MapBoxBloc>().zoomOut,
+                icon: Icons.zoom_out),
+            const SizedBox(
+              height: 8,
+            ),
+            CustomButton(onTap: () {}, icon: Icons.location_searching),
+          ],
+        ));
   }
 }
