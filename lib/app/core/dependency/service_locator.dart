@@ -4,6 +4,7 @@ import 'package:map_box_app/app/features/map_box/data/data_source/map_box_servic
 import 'package:map_box_app/app/features/map_box/data/repositories/map_box_impl.dart';
 import 'package:map_box_app/app/features/map_box/domain/repositories/map_box_repository.dart';
 import 'package:map_box_app/app/features/map_box/domain/use_cases/fetch_route.dart';
+import 'package:map_box_app/app/features/map_box/domain/use_cases/search_suggestion.dart';
 import 'package:map_box_app/app/features/map_box/presentations/bloc/map_box_bloc.dart';
 
 final sl = GetIt.instance;
@@ -18,6 +19,8 @@ void setupLocator() {
       () => MapBoxImpl(mapBoxService: sl(), suggestMapper: sl()));
   // use case
   sl.registerLazySingleton<FetchRoute>(() => FetchRoute(sl()));
+  sl.registerLazySingleton<SearchSuggestion>(() => SearchSuggestion(sl()));
   // bloc
-  sl.registerLazySingleton(() => MapBoxBloc(fetchRoute: sl()));
+  sl.registerLazySingleton(
+      () => MapBoxBloc(fetchRoute: sl(), searchSuggestion: sl()));
 }

@@ -2,7 +2,9 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:map_box_app/app/core/common/constants/app_path.dart';
+import 'package:map_box_app/app/features/map_box/domain/entities/suggestion_entity.dart';
 import 'package:map_box_app/app/features/map_box/domain/use_cases/fetch_route.dart';
+import 'package:map_box_app/app/features/map_box/domain/use_cases/search_suggestion.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
 
 part 'map_box_event.dart';
@@ -10,6 +12,7 @@ part 'map_box_state.dart';
 
 class MapBoxBloc extends Bloc<MapBoxEvent, MapBoxState> {
   final FetchRoute fetchRoute;
+  final SearchSuggestion searchSuggestion;
 
   List<Position> corList = [];
   late PointAnnotationManager pointAnnotationManager;
@@ -17,8 +20,13 @@ class MapBoxBloc extends Bloc<MapBoxEvent, MapBoxState> {
   late CameraOptions initialCameraPosition;
   MapboxMap? mapboxMap;
 
-  MapBoxBloc({required this.fetchRoute}) : super(MapBoxInitState()) {
+  MapBoxBloc({required this.fetchRoute, required this.searchSuggestion})
+      : super(MapBoxInitState()) {
     on<OnTapMap>(onTapMap);
+    on<OnSuggestionSearch>(searchSuggestions);
+    on<OnClearSuggestion>((event, emit) {
+      emit(SearchSuccessState(const []));
+    });
 
     initialCameraPosition = CameraOptions(
       center: Point(
@@ -26,6 +34,26 @@ class MapBoxBloc extends Bloc<MapBoxEvent, MapBoxState> {
       ),
       zoom: 12.0,
     );
+  }
+
+  Future<void> searchSuggestions(
+      OnSuggestionSearch event, Emitter<MapBoxState> emit) async {
+    emit(SearchLoadingState());
+    try {
+      final response = await searchSuggestion.searchSuggestion(event.query);
+      emit(SearchSuccessState(response));
+    } catch (e) {
+      emit(SearchFailedState(e.toString()));
+    }
+  }
+
+  Future<void> fetchGenerateRoute() async {
+    try {
+      final response = await fetchRoute.fetchRoute(corList);
+      drawRoute(response);
+    } catch (e) {
+      rethrow;
+    }
   }
 
   void onMapCreated(MapboxMap mapboxMap) async {
@@ -42,7 +70,6 @@ class MapBoxBloc extends Bloc<MapBoxEvent, MapBoxState> {
   }
 
   void onTapMap(OnTapMap event, Emitter<MapBoxState> emit) async {
-    emit(MapBoxLoadingState());
     try {
       final position = Position(
         event.context.point.coordinates.lng,
@@ -62,15 +89,6 @@ class MapBoxBloc extends Bloc<MapBoxEvent, MapBoxState> {
         );
         await fetchGenerateRoute();
       }
-    } catch (e) {
-      rethrow;
-    }
-  }
-
-  Future<void> fetchGenerateRoute() async {
-    try {
-      final response = await fetchRoute.fetchRoute(corList);
-      drawRoute(response);
     } catch (e) {
       rethrow;
     }

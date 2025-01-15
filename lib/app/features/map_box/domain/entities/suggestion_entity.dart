@@ -8,6 +8,5 @@ class SuggestionEntity with _$SuggestionEntity {
     required String name,
     required String mapBoxId,
     required String fullAddress,
-    // required List<CoordinateModel> coordinates
   }) = _SuggestionEntity;
 }

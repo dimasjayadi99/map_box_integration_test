@@ -5,9 +5,9 @@ class SuggestMapper {
   SuggestionEntity toSuggest(Suggestion data) {
     try {
       return SuggestionEntity(
-        name: data.name,
-        mapBoxId: data.mapboxId,
-        fullAddress: data.fullAddress,
+        name: data.name ?? 'unknown',
+        mapBoxId: data.mapboxId ?? 'unknown',
+        fullAddress: data.fullAddress ?? 'unknown',
       );
     } catch (e) {
       throw Exception('Failed to mapping data : $e');

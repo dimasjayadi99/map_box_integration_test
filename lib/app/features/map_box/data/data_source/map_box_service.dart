@@ -1,5 +1,5 @@
 import 'dart:convert';
-
+import 'dart:math'
 import 'package:map_box_app/app/config/map_config.dart';
 import 'package:http/http.dart' as http;
 import 'package:map_box_app/app/features/map_box/data/models/search_suggestions_model.dart';
@@ -9,6 +9,15 @@ class MapBoxService {
   final accessToken = MapConfig.publicAccessKey;
   final directionsBaseUrl = MapConfig.baseUrlDirection;
   final suggestBaseUrl = MapConfig.baseUrlSuggest;
+
+  // Generate session token
+  String _generateSessionToken() {
+    final random = Random();
+    const chars =
+        'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    return List.generate(16, (index) => chars[random.nextInt(chars.length)])
+        .join();
+  }
 
   // fetch route
   Future<List<Position>> fetchRouteService(List<Position> coordinates) async {
@@ -42,7 +51,9 @@ class MapBoxService {
   Future<SearchSuggestionsModel?> fetchSearchSuggestions(String query) async {
     if (query.isEmpty) return null;
 
-    final url = "$suggestBaseUrl?q=$query&access_token=$accessToken";
+    final sessionToken = _generateSessionToken();
+    final url =
+        "$suggestBaseUrl?q=${Uri.encodeComponent(query)}&access_token=$accessToken&session_token=$sessionToken";
 
     try {
       final response = await http.get(Uri.parse(url));
@@ -51,7 +62,7 @@ class MapBoxService {
 
         return SearchSuggestionsModel.fromJson(data);
       } else {
-        throw Exception('Failed to fetch route : ${response.statusCode}');
+        throw Exception('Failed to fetch suggestions: ${response.statusCode}');
       }
     } catch (e) {
       throw Exception("An unexpected error occurred: $e");

@@ -13,3 +13,14 @@ class OnTapMap extends MapBoxEvent {
   @override
   List<Object?> get props => [context];
 }
+
+class OnSuggestionSearch extends MapBoxEvent {
+  final String query;
+
+  OnSuggestionSearch(this.query);
+
+  @override
+  List<Object?> get props => [query];
+}
+
+class OnClearSuggestion extends MapBoxEvent {}

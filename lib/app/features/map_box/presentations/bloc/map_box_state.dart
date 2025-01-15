@@ -7,21 +7,21 @@ abstract class MapBoxState extends Equatable {
 
 class MapBoxInitState extends MapBoxState {}
 
-class MapBoxLoadingState extends MapBoxState {}
+class SearchLoadingState extends MapBoxState {}
 
-class MapBoxSuccessState extends MapBoxState {
-  final List<Position> positions;
+class SearchSuccessState extends MapBoxState {
+  final List<SuggestionEntity> suggestion;
 
-  MapBoxSuccessState(this.positions);
+  SearchSuccessState(this.suggestion);
 
   @override
-  List<Object?> get props => [positions];
+  List<Object?> get props => [suggestion];
 }
 
-class MapBoxFailedState extends MapBoxState {
+class SearchFailedState extends MapBoxState {
   final String message;
 
-  MapBoxFailedState(this.message);
+  SearchFailedState(this.message);
 
   @override
   List<Object?> get props => [message];
