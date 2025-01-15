@@ -5,6 +5,7 @@ import 'package:map_box_app/app/core/common/constants/app_path.dart';
 import 'package:map_box_app/app/features/map_box/domain/entities/suggestion_entity.dart';
 import 'package:map_box_app/app/features/map_box/domain/use_cases/fetch_route.dart';
 import 'package:map_box_app/app/features/map_box/domain/use_cases/search_suggestion.dart';
+import 'package:map_box_app/app/features/map_box/domain/use_cases/suggestion_on_tap.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
 
 part 'map_box_event.dart';
@@ -13,6 +14,7 @@ part 'map_box_state.dart';
 class MapBoxBloc extends Bloc<MapBoxEvent, MapBoxState> {
   final FetchRoute fetchRoute;
   final SearchSuggestion searchSuggestion;
+  final SuggestionOnTap suggestionOnTap;
 
   List<Position> corList = [];
   late PointAnnotationManager pointAnnotationManager;
@@ -20,13 +22,17 @@ class MapBoxBloc extends Bloc<MapBoxEvent, MapBoxState> {
   late CameraOptions initialCameraPosition;
   MapboxMap? mapboxMap;
 
-  MapBoxBloc({required this.fetchRoute, required this.searchSuggestion})
+  MapBoxBloc(
+      {required this.fetchRoute,
+      required this.searchSuggestion,
+      required this.suggestionOnTap})
       : super(MapBoxInitState()) {
     on<OnTapMap>(onTapMap);
     on<OnSuggestionSearch>(searchSuggestions);
     on<OnClearSuggestion>((event, emit) {
       emit(SearchSuccessState(const []));
     });
+    on<OnTapSuggestion>(tapSuggestion);
 
     initialCameraPosition = CameraOptions(
       center: Point(
@@ -42,6 +48,31 @@ class MapBoxBloc extends Bloc<MapBoxEvent, MapBoxState> {
     try {
       final response = await searchSuggestion.searchSuggestion(event.query);
       emit(SearchSuccessState(response));
+    } catch (e) {
+      emit(SearchFailedState(e.toString()));
+    }
+  }
+
+  Future<void> tapSuggestion(
+      OnTapSuggestion event, Emitter<MapBoxState> emit) async {
+    try {
+      final response = await suggestionOnTap.suggestionOnTap(event.mapBoxId);
+
+      if (response.lat != 0 || response.lon != 0) {
+        final newCameraPosition = CameraOptions(
+          center: Point(
+            coordinates: Position(response.lon, response.lat),
+          ),
+          zoom: 15.0,
+        );
+
+        mapboxMap?.flyTo(
+          newCameraPosition,
+          MapAnimationOptions(duration: 1500, startDelay: 0),
+        );
+
+        emit(SearchSuccessState(const []));
+      }
     } catch (e) {
       emit(SearchFailedState(e.toString()));
     }

@@ -23,4 +23,13 @@ class OnSuggestionSearch extends MapBoxEvent {
   List<Object?> get props => [query];
 }
 
+class OnTapSuggestion extends MapBoxEvent {
+  final String mapBoxId;
+
+  OnTapSuggestion(this.mapBoxId);
+
+  @override
+  List<Object?> get props => [mapBoxId];
+}
+
 class OnClearSuggestion extends MapBoxEvent {}

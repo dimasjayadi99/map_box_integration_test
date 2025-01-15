@@ -137,9 +137,9 @@ class MapBoxPage extends StatelessWidget {
                     style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
                   subtitle: Text(suggestion.fullAddress),
-                  onTap: () {
-                    /// get suggestion id for get detail location
-                  },
+                  onTap: () => context
+                      .read<MapBoxBloc>()
+                      .add(OnTapSuggestion(suggestions[index].mapBoxId)),
                 );
               },
             ),
