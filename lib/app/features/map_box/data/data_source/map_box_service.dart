@@ -1,10 +1,12 @@
 import 'dart:convert';
+import 'dart:io';
 import 'dart:math';
 import 'package:map_box_app/app/config/map_config.dart';
 import 'package:http/http.dart' as http;
 import 'package:map_box_app/app/features/map_box/data/models/coordinate_model.dart';
 import 'package:map_box_app/app/features/map_box/data/models/search_suggestions_model.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
+import '../../../../core/exceptions/network_exception.dart';
 
 class MapBoxService {
   final accessToken = MapConfig.publicAccessKey;
@@ -41,8 +43,10 @@ class MapBoxService {
 
         return routePoints;
       } else {
-        throw Exception('Failed to fetch route : ${response.statusCode}');
+        throw NetworkException(statusCode: response.statusCode);
       }
+    } on SocketException catch (e) {
+      throw Exception("No Internet connection: ${e.message}");
     } catch (e) {
       throw Exception("An unexpected error occurred: $e");
     }
@@ -63,8 +67,10 @@ class MapBoxService {
 
         return SearchSuggestionsModel.fromJson(data);
       } else {
-        throw Exception('Failed to fetch suggestions: ${response.statusCode}');
+        throw NetworkException(statusCode: response.statusCode);
       }
+    } on SocketException catch (e) {
+      throw Exception("No Internet connection: ${e.message}");
     } catch (e) {
       throw Exception("An unexpected error occurred: $e");
     }
@@ -85,8 +91,10 @@ class MapBoxService {
 
         return CoordinateModel.fromJson(data);
       } else {
-        throw Exception('Failed to fetch suggestions: ${response.statusCode}');
+        throw NetworkException(statusCode: response.statusCode);
       }
+    } on SocketException catch (e) {
+      throw Exception("No Internet connection: ${e.message}");
     } catch (e) {
       throw Exception("An unexpected error occurred: $e");
     }
